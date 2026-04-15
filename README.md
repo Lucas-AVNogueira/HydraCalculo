@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  Aplicação fullstack para registro e monitoramento de hidratação pessoal.<br>
+  Aplicação fullstack desenvolvido no Desafio 4 da mentoria para registro e monitoramento de hidratação pessoal.<br>
   API REST (Node.js + Express) com interface web (React + Vite).<br>
   A cada consumo registrado, calcula automaticamente a meta diária, o total consumido, o volume restante e a porcentagem atingida.
 </p>
@@ -336,5 +336,5 @@ HydraCálculo/
 ---
 
 <p align="center">
-  Desenvolvido com 💧 e <strong>IA Generativa</strong> — <a href="https://github.com/features/copilot">GitHub Copilot</a>
+  Desenvolvido com <strong>IA Generativa</strong> — <a href="https://github.com/features/copilot">GitHub Copilot</a>
 </p>
