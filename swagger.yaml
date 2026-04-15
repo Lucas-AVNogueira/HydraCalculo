@@ -1,0 +1,267 @@
+openapi: 3.0.3
+info:
+  title: HydraCálculo API
+  description: >
+    API REST para gestão e monitoramento de hidratação pessoal.
+    Calcula metas diárias de consumo de água com base no peso do usuário.
+  version: 1.0.0
+  contact:
+    name: Lucas Nogueira
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local de desenvolvimento
+
+paths:
+  /consumo:
+    get:
+      summary: Lista todos os registros de hidratação
+      operationId: listarConsumo
+      tags:
+        - Consumo
+      responses:
+        '200':
+          description: Lista de registros de hidratação (array vazio se não houver registros)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsumoArmazenado'
+              example:
+                - id: 1
+                  nome_usuario: João Silva
+                  peso_kg: 70
+                  altura_cm: 175
+                  data_hora: '2026-04-15T10:00:00'
+                  recipiente: Garrafa (500ml)
+                  volume_ml: 500
+                  meta_sugerida_ml: 2450
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '405':
+          description: Método não permitido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResposta'
+              example:
+                error: 'Método não permitido.'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResposta'
+              example:
+                error: Erro interno do servidor.
+
+    post:
+      summary: Registra um novo consumo de água
+      operationId: registrarConsumo
+      tags:
+        - Consumo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumoEntrada'
+            example:
+              nome_usuario: João Silva
+              peso_kg: 70
+              altura_cm: 175
+              data_hora: '2026-04-15T10:00:00'
+              recipiente: Garrafa (500ml)
+      responses:
+        '201':
+          description: Registro criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumoResposta'
+              example:
+                id: 1
+                nome_usuario: João Silva
+                peso_kg: 70
+                altura_cm: 175
+                data_hora: '2026-04-15T10:00:00'
+                recipiente: Garrafa (500ml)
+                volume_ml: 500
+                meta_sugerida_ml: 2450
+                total_consumido_hoje: 500
+                restante_ml: 1950
+                porcentagem_faltante: 79.59
+        '400':
+          description: Erro de validação dos dados enviados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResposta'
+              examples:
+                pesoInvalido:
+                  summary: peso_kg inválido
+                  value:
+                    error: peso_kg deve ser um número maior que 0.
+                nomeVazio:
+                  summary: nome_usuario vazio
+                  value:
+                    error: nome_usuario não pode ser vazio.
+                nomeInvalido:
+                  summary: nome_usuario contém números ou símbolos
+                  value:
+                    error: nome_usuario deve conter apenas letras.
+                volumeDivergente:
+                  summary: recipiente inválido
+                  value:
+                    error: 'recipiente inválido. Valores aceitos: Copo Americano (190ml), Copo (200ml), ...'
+                dataInvalida:
+                  summary: data_hora em formato inválido
+                  value:
+                    error: 'data_hora deve estar no formato ISO 8601 (ex: 2026-04-15T10:00:00).'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '405':
+          description: Método não permitido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResposta'
+              example:
+                error: 'Método não permitido.'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroResposta'
+              example:
+                error: Erro interno do servidor.
+
+components:
+  schemas:
+    ConsumoEntrada:
+      type: object
+      required:
+        - nome_usuario
+        - peso_kg
+        - altura_cm
+        - data_hora
+        - recipiente
+      properties:
+        nome_usuario:
+          type: string
+          minLength: 1
+          pattern: '^[a-zA-ZÀ-ÿ\s\''-]+$'
+          description: Nome do usuário (apenas letras, espaços, hífens e apóstrofos; números não são permitidos)
+          example: João Silva
+        peso_kg:
+          type: number
+          exclusiveMinimum: 0
+          description: Peso do usuário em kg (deve ser estritamente maior que 0)
+          example: 70
+        altura_cm:
+          type: integer
+          minimum: 50
+          description: Altura do usuário em centímetros (inteiro, mínimo 50)
+          example: 175
+        data_hora:
+          type: string
+          description: Data e hora do consumo no formato ISO 8601
+          example: '2026-04-15T10:00:00'
+        recipiente:
+          type: string
+          description: Tipo de recipiente utilizado
+          enum:
+            - Copo Americano (190ml)
+            - Copo (200ml)
+            - Copo de Requeijão (250ml)
+            - Garrafa Premium (330ml)
+            - Garrafa (500ml)
+            - Garrafa Esportiva (750ml)
+            - Garrafa (1L)
+            - Garrafa Térmica (1.2L)
+            - Garrafa Térmica (1.5L)
+            - Galaozinho (2L)
+          example: Garrafa (500ml)
+        volume_ml:
+          type: integer
+          readOnly: true
+          description: >-
+            Volume em mililitros, derivado automaticamente do recipiente.
+            Valores: 190, 200, 250, 330, 500, 750, 1000, 1200, 1500, 2000.
+          example: 500
+
+    ConsumoArmazenado:
+      allOf:
+        - $ref: '#/components/schemas/ConsumoEntrada'
+        - type: object
+          required:
+            - id
+            - meta_sugerida_ml
+          properties:
+            id:
+              type: integer
+              description: Identificador único auto-incrementado
+              example: 1
+            meta_sugerida_ml:
+              type: number
+              description: Meta diária de hidratação sugerida em ml (peso_kg × 35)
+              example: 2450
+
+    ConsumoResposta:
+      allOf:
+        - $ref: '#/components/schemas/ConsumoArmazenado'
+        - type: object
+          required:
+            - total_consumido_hoje
+            - restante_ml
+          properties:
+            total_consumido_hoje:
+              type: integer
+              description: Total de ml consumidos pelo usuário na data informada (inclui o registro atual)
+              example: 500
+            restante_ml:
+              type: number
+              description: Quantidade em ml restante para atingir a meta_sugerida_ml. Nunca negativo (mínimo 0).
+              example: 1950
+            porcentagem_faltante:
+              type: number
+              description: Percentual da meta diária ainda não atingido (0 a 100, com 2 casas decimais)
+              example: 79.59
+
+    ErroResposta:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Mensagem detalhada do erro
+          example: peso_kg deve ser um número maior que 0.
+
+  responses:
+    NotFound:
+      description: Rota não encontrada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroResposta'
+          example:
+            error: Rota não encontrada.
+    MethodNotAllowed:
+      description: Método não permitido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroResposta'
+          example:
+            error: 'Método não permitido.'
+    InternalServerError:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroResposta'
+          example:
+            error: Erro interno do servidor.

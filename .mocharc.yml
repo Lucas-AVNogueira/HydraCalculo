@@ -1,0 +1,6 @@
+spec: tests/consumo.test.js
+timeout: 1000
+reporter: mochawesome
+reporter-option:
+  - reportDir=test-report
+  - quiet=true
